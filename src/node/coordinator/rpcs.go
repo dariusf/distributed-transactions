@@ -2,6 +2,7 @@ package coordinator
 
 import (
 	"distributed-transactions/src/node/participant"
+	"distributed-transactions/src/rv"
 	"fmt"
 	"log"
 	"net/rpc"
@@ -145,7 +146,10 @@ func (c Coordinator) Commit(ca *CommitArgs, reply *bool) error {
 
 	// check if we can commit
 	cca := participant.CanCommitArgs{ca.Tid}
-	for _, p := range self.Participants {
+	for pid, p := range self.Participants {
+		if err := c.monitor.StepA(rv.CSendPrepare8, pid); err != nil {
+			log.Printf("%v\n", err)
+		}
 		client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", "localhost", 3000+p.Id))
 		if err != nil {
 			log.Println("Error in Commit/Dial:", err)
@@ -168,15 +172,21 @@ func (c Coordinator) Commit(ca *CommitArgs, reply *bool) error {
 		if !check {
 			*reply = false
 			log.Println("Someone said no!")
+			if err := c.monitor.StepA(rv.CReceiveAbort10, pid); err != nil {
+				log.Printf("%v\n", err)
+			}
 			client.Close()
 			return nil
+		}
+		if err := c.monitor.StepA(rv.CReceivePrepared9, pid); err != nil {
+			log.Printf("%v\n", err)
 		}
 		client.Close()
 	}
 
 	// if we can, we commit
 	dca := participant.DoCommitArgs{ca.Tid}
-	for _, p := range self.Participants {
+	for pid, p := range self.Participants {
 		client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", "localhost", 3000+p.Id))
 		if err != nil {
 			log.Println("Error in DoCommit/Dial:", err)
@@ -186,14 +196,21 @@ func (c Coordinator) Commit(ca *CommitArgs, reply *bool) error {
 
 		var check bool
 		err = client.Call("Participant.DoCommit", &dca, &check)
+		if err := c.monitor.StepA(rv.CSendCommit11, pid); err != nil {
+			log.Printf("%v\n", err)
+		}
 		if err != nil && err.Error() != "No such transaction in server" {
 			log.Println("Error in DoCommit/RPC:", err)
 			client.Close()
 			return err
 		}
-
+		if err := c.monitor.StepA(rv.CReceiveCommitAck12, pid); err != nil {
+			log.Printf("%v\n", err)
+		}
 		client.Close()
 	}
+
+	c.monitor.PrintLog()
 
 	*reply = true
 	return nil
@@ -203,7 +220,7 @@ func (c Coordinator) Abort(aa *AbortArgs, reply *bool) error {
 	defer graph.RemoveTransaction(aa.Tid)
 
 	paa := participant.DoAbortArgs{aa.Tid}
-	for _, p := range self.Participants {
+	for pid, p := range self.Participants {
 		client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", "localhost", 3000+p.Id))
 		if err != nil {
 			log.Println("Error in Abort/Dial:", err)
@@ -212,10 +229,16 @@ func (c Coordinator) Abort(aa *AbortArgs, reply *bool) error {
 
 		var check bool
 		err = client.Call("Participant.DoAbort", &paa, &check)
+		if err := c.monitor.StepA(rv.CSendAbort13, pid); err != nil {
+			log.Printf("%v\n", err)
+		}
 		if err != nil && err.Error() != "No such transaction in server" {
 			log.Println("Error in DoAbort/RPC:", err)
 			client.Close()
 			return err
+		}
+		if err := c.monitor.StepA(rv.CReceiveAbortAck14, pid); err != nil {
+			log.Printf("%v\n", err)
 		}
 
 		client.Close()

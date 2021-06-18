@@ -2,6 +2,7 @@ package coordinator
 
 import (
 	"distributed-transactions/src/node/participant"
+	"distributed-transactions/src/rv"
 	"fmt"
 	"log"
 	"net"
@@ -18,6 +19,8 @@ var graph *Graph
 
 type Coordinator struct {
 	Participants map[string]participant.Participant
+	mParts       map[string]bool
+	monitor      *rv.Monitor
 }
 
 func Start() error {
@@ -45,13 +48,13 @@ func Start() error {
 
 func New() Coordinator {
 	parts := make(map[string]participant.Participant, 0)
-	c := Coordinator{parts}
+	mParts := map[string]bool{}
+	c := Coordinator{Participants: parts, mParts: mParts, monitor: rv.NewMonitor(map[string]map[string]bool{"P": mParts})}
 	return c
 }
 
 func (c Coordinator) setupRPC() error {
-	coord := new(Coordinator)
-	e1 := rpc.Register(coord)
+	e1 := rpc.Register(c)
 	if e1 != nil {
 		log.Println("Error in register RPC:", e1)
 		return e1
@@ -86,6 +89,7 @@ func (c Coordinator) joinParticipant(id int) {
 			} else {
 				mutex.Lock()
 				c.Participants[serverId] = reply
+				c.mParts[serverId] = true
 				mutex.Unlock()
 				log.Printf("Server %v joined the system\n", serverId)
 			}
