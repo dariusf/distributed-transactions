@@ -1,20 +1,22 @@
 package node
 
 import (
+	"distributed-transactions/src/node/coordinator"
+	"distributed-transactions/src/node/participant"
 	"fmt"
 	"log"
-	"node/coordinator"
-	"node/participant"
+	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 )
 
-var host string = "sp17-cs425-g26-0%d.cs.illinois.edu"
+var host string = "localhost"
 var nodeId int
 
 func Start() {
 	log.Println("Starting server..")
-	hostname := getHostName()
+	hostname := "localhost"
 	for i := 1; i < 10; i++ {
 		name := fmt.Sprintf(host, i)
 		if name == hostname {
@@ -22,8 +24,9 @@ func Start() {
 			break
 		}
 	}
+	nodeId, _ = strconv.Atoi(os.Getenv("NODE_ID"))
 	log.Printf("Node ID is %v\n", nodeId)
-	if nodeId == 1 {
+	if os.Getenv("COORDINATOR") == "1" {
 		// if id is 1, is Coordinator
 		go coordinator.Start()
 	} else {

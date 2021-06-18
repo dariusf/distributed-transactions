@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 	"net/rpc"
+	"os"
 	"sync"
 )
 
@@ -38,7 +39,7 @@ func Start(hostname string, id int) error {
 func (p Participant) setupRPC() {
 	part := new(Participant)
 	rpc.Register(part)
-	l, e := net.Listen("tcp", ":3000")
+	l, e := net.Listen("tcp", ":"+os.Getenv("RPC_PORT"))
 	if e != nil {
 		log.Println("Error in setup RPC:", e)
 	}

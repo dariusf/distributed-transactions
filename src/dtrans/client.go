@@ -1,12 +1,12 @@
 package dtrans
 
 import (
+	"distributed-transactions/src/node/coordinator"
 	"log"
 	"net/rpc"
-	"node/coordinator"
 )
 
-var chost string = "sp17-cs425-g26-01.cs.illinois.edu:3000"
+const chost string = "localhost:3001"
 
 func Begin() (error, int32) {
 	client, err := rpc.Dial("tcp", chost)

@@ -1,10 +1,11 @@
 package coordinator
 
 import (
+	"distributed-transactions/src/node/participant"
 	"fmt"
 	"log"
 	"net/rpc"
-	"node/participant"
+	"strconv"
 	"time"
 )
 
@@ -35,7 +36,8 @@ type CommitArgs struct {
 
 func (c Coordinator) Begin(ba *BeginArgs, reply *int32) error {
 	for _, s := range self.Participants {
-		client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", s.Address, 3000))
+		participantId := s.Id
+		client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", "localhost", 3000+participantId))
 		if err != nil {
 			log.Println("Error in Begin/Dial:", err)
 			return err
@@ -56,9 +58,10 @@ func (c Coordinator) Begin(ba *BeginArgs, reply *int32) error {
 
 func (c Coordinator) Set(sa *SetArgs, reply *bool) error {
 	otherId := fmt.Sprint([]rune(sa.ServerId)[0] - 63)
+	id, _ := strconv.Atoi(otherId)
 
-	if p, ok := self.Participants[sa.ServerId]; ok {
-		client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", p.Address, 3000))
+	if _, ok := self.Participants[sa.ServerId]; ok {
+		client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", "localhost", 3000+id))
 		defer client.Close()
 
 		if err != nil {
@@ -100,7 +103,7 @@ func (c Coordinator) Get(ga *GetArgs, reply *string) error {
 	otherId := fmt.Sprint([]rune(ga.ServerId)[0] - 63)
 
 	if p, ok := self.Participants[ga.ServerId]; ok {
-		client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", p.Address, 3000))
+		client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", "localhost", 3000+p.Id))
 		defer client.Close()
 
 		if err != nil {
@@ -143,7 +146,7 @@ func (c Coordinator) Commit(ca *CommitArgs, reply *bool) error {
 	// check if we can commit
 	cca := participant.CanCommitArgs{ca.Tid}
 	for _, p := range self.Participants {
-		client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", p.Address, 3000))
+		client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", "localhost", 3000+p.Id))
 		if err != nil {
 			log.Println("Error in Commit/Dial:", err)
 			client.Close()
@@ -174,7 +177,7 @@ func (c Coordinator) Commit(ca *CommitArgs, reply *bool) error {
 	// if we can, we commit
 	dca := participant.DoCommitArgs{ca.Tid}
 	for _, p := range self.Participants {
-		client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", p.Address, 3000))
+		client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", "localhost", 3000+p.Id))
 		if err != nil {
 			log.Println("Error in DoCommit/Dial:", err)
 			client.Close()
@@ -201,7 +204,7 @@ func (c Coordinator) Abort(aa *AbortArgs, reply *bool) error {
 
 	paa := participant.DoAbortArgs{aa.Tid}
 	for _, p := range self.Participants {
-		client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", p.Address, 3000))
+		client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", "localhost", 3000+p.Id))
 		if err != nil {
 			log.Println("Error in Abort/Dial:", err)
 			return err

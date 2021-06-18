@@ -1,7 +1,7 @@
 package main
 
 import (
-	"dtrans"
+	"distributed-transactions/src/dtrans"
 )
 
 func main() {

@@ -2,8 +2,8 @@ package dtrans
 
 import (
 	"bufio"
+	"distributed-transactions/src/node"
 	"fmt"
-	"node"
 	"os"
 	"regexp"
 )

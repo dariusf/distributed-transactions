@@ -1,16 +1,17 @@
 package coordinator
 
 import (
+	"distributed-transactions/src/node/participant"
 	"fmt"
 	"log"
 	"net"
 	"net/rpc"
-	"node/participant"
+	"os"
 	"strconv"
 	"sync"
 )
 
-var host string = "sp17-cs425-g26-0%d.cs.illinois.edu"
+var host string = "localhost"
 var mutex = &sync.Mutex{}
 var self Coordinator
 var graph *Graph
@@ -30,7 +31,8 @@ func Start() error {
 	}
 
 	// join up with participant servers
-	for i := 2; i < 10; i++ {
+	total, _ := strconv.Atoi(os.Getenv("NUM_NODES"))
+	for i := 2; i < 2+total; i++ {
 		go self.joinParticipant(i)
 	}
 
@@ -49,8 +51,12 @@ func New() Coordinator {
 
 func (c Coordinator) setupRPC() error {
 	coord := new(Coordinator)
-	rpc.Register(coord)
-	l, e := net.Listen("tcp", ":3000")
+	e1 := rpc.Register(coord)
+	if e1 != nil {
+		log.Println("Error in register RPC:", e1)
+		return e1
+	}
+	l, e := net.Listen("tcp", ":"+os.Getenv("RPC_PORT"))
 	if e != nil {
 		log.Println("Error in setup RPC:", e)
 		return e
@@ -62,7 +68,7 @@ func (c Coordinator) setupRPC() error {
 func (c Coordinator) joinParticipant(id int) {
 	serverId := string(rune('A' + (id - 2)))
 	log.Printf("Trying to join node %v\n", serverId)
-	hostname := fmt.Sprintf("%s:%d", fmt.Sprintf(host, id), 3000)
+	hostname := fmt.Sprintf("localhost:%d", 3000+id)
 
 	for {
 		client, err := rpc.Dial("tcp", hostname)
