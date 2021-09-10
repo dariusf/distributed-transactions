@@ -1,6 +1,7 @@
 package participant
 
 import (
+	"distributed-transactions/src/rvp"
 	"log"
 	"net"
 	"net/rpc"
@@ -14,6 +15,7 @@ type Participant struct {
 	Address      string
 	Id           int
 	held         map[string]*Held
+	monitor      *rvp.Monitor
 }
 
 type Held struct {
@@ -24,6 +26,7 @@ type Held struct {
 	lock    *sync.Mutex
 }
 
+// This is the real participant instance. The one in setupRPC and the receiver p in RPC methods is an empty instance.
 var self Participant
 var wg sync.WaitGroup
 
@@ -49,7 +52,8 @@ func (p Participant) setupRPC() {
 func New(addr string, id int) Participant {
 	objs := make(map[string]*Object, 0)
 	trans := make(map[int32]*Transaction, 0)
-	return Participant{objs, trans, addr, id, make(map[string]*Held, 0)}
+	monitor := rvp.NewMonitor(map[string]map[string]bool{"C": {"c": true}})
+	return Participant{objs, trans, addr, id, make(map[string]*Held, 0), monitor}
 }
 
 func NewHeld(name string, currId int32) *Held {

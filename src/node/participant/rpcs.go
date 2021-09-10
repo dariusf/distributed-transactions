@@ -1,6 +1,7 @@
 package participant
 
 import (
+	"distributed-transactions/src/rvp"
 	"fmt"
 	"log"
 	"sync"
@@ -49,7 +50,20 @@ func (p *Participant) Begin(ba *BeginArgs, reply *bool) error {
 func (p *Participant) CanCommit(cca *CanCommitArgs, reply *bool) error {
 	log.Println(self.Transactions, cca.Tid)
 	if value, ok := self.Transactions[cca.Tid]; ok {
-		*reply = !value.hasFailed()
+		if err := self.monitor.StepA(rvp.PReceivePrepare1, "c"); err != nil {
+			log.Printf("%v\n", err)
+		}
+		result := !value.hasFailed()
+		*reply = result
+		if result {
+			if err := self.monitor.StepA(rvp.PSendPrepared2, "c"); err != nil {
+				log.Printf("%v\n", err)
+			}
+		} else {
+			if err := self.monitor.StepA(rvp.PSendAbort3, "c"); err != nil {
+				log.Printf("%v\n", err)
+			}
+		}
 		return nil
 	}
 	return fmt.Errorf("No such transaction in server")
@@ -57,6 +71,9 @@ func (p *Participant) CanCommit(cca *CanCommitArgs, reply *bool) error {
 
 func (p *Participant) DoCommit(dca *DoCommitArgs, reply *bool) error {
 	if value, ok := self.Transactions[dca.Tid]; ok {
+		if err := self.monitor.StepA(rvp.PReceiveCommit4, "c"); err != nil {
+			log.Printf("%v\n", err)
+		}
 		for k, v := range self.Transactions[dca.Tid].updates {
 			if _, ok := self.Objects[k]; ok {
 				self.Objects[k].copyObject(v)
@@ -71,6 +88,9 @@ func (p *Participant) DoCommit(dca *DoCommitArgs, reply *bool) error {
 			self.held[k].cond.Broadcast()
 		}
 		value.commit()
+		if err := self.monitor.StepA(rvp.PSendCommitAck5, "c"); err != nil {
+			log.Printf("%v\n", err)
+		}
 		*reply = true
 		return nil
 	}
@@ -79,6 +99,9 @@ func (p *Participant) DoCommit(dca *DoCommitArgs, reply *bool) error {
 
 func (p *Participant) DoAbort(daa *DoAbortArgs, reply *bool) error {
 	if trans, ok := self.Transactions[daa.Tid]; ok {
+		if err := self.monitor.StepA(rvp.PReceiveAbort6, "c"); err != nil {
+			log.Printf("%v\n", err)
+		}
 		for k := range self.Objects {
 			self.Objects[k].stop()
 			self.Objects[k].resetKey(trans.initial[k].Value, daa.Tid)
@@ -86,6 +109,10 @@ func (p *Participant) DoAbort(daa *DoAbortArgs, reply *bool) error {
 			self.held[k].cond.Broadcast()
 		}
 		trans.abort()
+
+		if err := self.monitor.StepA(rvp.PSendAbortAck7, "c"); err != nil {
+			log.Printf("%v\n", err)
+		}
 		*reply = true
 		return nil
 	}

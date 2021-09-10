@@ -210,7 +210,7 @@ func (c Coordinator) Commit(ca *CommitArgs, reply *bool) error {
 		client.Close()
 	}
 
-	c.monitor.PrintLog()
+	c.monitor.Reset()
 
 	*reply = true
 	return nil
@@ -243,6 +243,8 @@ func (c Coordinator) Abort(aa *AbortArgs, reply *bool) error {
 
 		client.Close()
 	}
+
+	c.monitor.Reset()
 
 	return nil
 }
