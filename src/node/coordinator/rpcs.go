@@ -147,7 +147,7 @@ func (c Coordinator) Commit(ca *CommitArgs, reply *bool) error {
 	// check if we can commit
 	cca := participant.CanCommitArgs{ca.Tid}
 	for pid, p := range self.Participants {
-		if err := c.monitor.StepA(rvc.CSendPrepare8, pid); err != nil {
+		if err := self.monitor.StepA(rvc.CSendPrepare8, pid); err != nil {
 			log.Printf("%v\n", err)
 		}
 		client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", "localhost", 3000+p.Id))
@@ -172,13 +172,13 @@ func (c Coordinator) Commit(ca *CommitArgs, reply *bool) error {
 		if !check {
 			*reply = false
 			log.Println("Someone said no!")
-			if err := c.monitor.StepA(rvc.CReceiveAbort10, pid); err != nil {
+			if err := self.monitor.StepA(rvc.CReceiveAbort10, pid); err != nil {
 				log.Printf("%v\n", err)
 			}
 			client.Close()
 			return nil
 		}
-		if err := c.monitor.StepA(rvc.CReceivePrepared9, pid); err != nil {
+		if err := self.monitor.StepA(rvc.CReceivePrepared9, pid); err != nil {
 			log.Printf("%v\n", err)
 		}
 		client.Close()
@@ -196,7 +196,7 @@ func (c Coordinator) Commit(ca *CommitArgs, reply *bool) error {
 
 		var check bool
 		err = client.Call("Participant.DoCommit", &dca, &check)
-		if err := c.monitor.StepA(rvc.CSendCommit11, pid); err != nil {
+		if err := self.monitor.StepA(rvc.CSendCommit11, pid); err != nil {
 			log.Printf("%v\n", err)
 		}
 		if err != nil && err.Error() != "No such transaction in server" {
@@ -204,13 +204,13 @@ func (c Coordinator) Commit(ca *CommitArgs, reply *bool) error {
 			client.Close()
 			return err
 		}
-		if err := c.monitor.StepA(rvc.CReceiveCommitAck12, pid); err != nil {
+		if err := self.monitor.StepA(rvc.CReceiveCommitAck12, pid); err != nil {
 			log.Printf("%v\n", err)
 		}
 		client.Close()
 	}
 
-	c.monitor.Reset()
+	self.monitor.Reset()
 
 	*reply = true
 	return nil
@@ -229,7 +229,7 @@ func (c Coordinator) Abort(aa *AbortArgs, reply *bool) error {
 
 		var check bool
 		err = client.Call("Participant.DoAbort", &paa, &check)
-		if err := c.monitor.StepA(rvc.CSendAbort13, pid); err != nil {
+		if err := self.monitor.StepA(rvc.CSendAbort13, pid); err != nil {
 			log.Printf("%v\n", err)
 		}
 		if err != nil && err.Error() != "No such transaction in server" {
@@ -237,14 +237,14 @@ func (c Coordinator) Abort(aa *AbortArgs, reply *bool) error {
 			client.Close()
 			return err
 		}
-		if err := c.monitor.StepA(rvc.CReceiveAbortAck14, pid); err != nil {
+		if err := self.monitor.StepA(rvc.CReceiveAbortAck14, pid); err != nil {
 			log.Printf("%v\n", err)
 		}
 
 		client.Close()
 	}
 
-	c.monitor.Reset()
+	self.monitor.Reset()
 
 	return nil
 }

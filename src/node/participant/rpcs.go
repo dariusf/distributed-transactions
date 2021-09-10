@@ -44,6 +44,7 @@ func (p *Participant) Join(ja *JoinArgs, reply *Participant) error {
 func (p *Participant) Begin(ba *BeginArgs, reply *bool) error {
 	*reply = true
 	log.Println("Initialized all objects for transaction")
+	self.monitor.Reset()
 	return nil
 }
 

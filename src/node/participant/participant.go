@@ -30,9 +30,9 @@ type Held struct {
 var self Participant
 var wg sync.WaitGroup
 
-func Start(hostname string, id int) error {
+func Start(hostname string, id int, quitting chan bool) error {
 	log.Println("Starting participant")
-	self = New(hostname, id)
+	self = New(hostname, id, quitting)
 	go self.setupRPC()
 	wg.Add(1)
 	wg.Wait()
@@ -49,10 +49,15 @@ func (p Participant) setupRPC() {
 	go rpc.Accept(l)
 }
 
-func New(addr string, id int) Participant {
+func New(addr string, id int, quitting chan bool) Participant {
 	objs := make(map[string]*Object, 0)
 	trans := make(map[int32]*Transaction, 0)
 	monitor := rvp.NewMonitor(map[string]map[string]bool{"C": {"c": true}})
+	go func() {
+		_ = <-quitting
+		monitor.PrintLog()
+		quitting <- true
+	}()
 	return Participant{objs, trans, addr, id, make(map[string]*Held, 0), monitor}
 }
 

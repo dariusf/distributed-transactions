@@ -14,7 +14,7 @@ import (
 var host string = "localhost"
 var nodeId int
 
-func Start() {
+func Start(quitting chan bool) {
 	log.Println("Starting server..")
 	hostname := "localhost"
 	for i := 1; i < 10; i++ {
@@ -28,10 +28,10 @@ func Start() {
 	log.Printf("Node ID is %v\n", nodeId)
 	if os.Getenv("COORDINATOR") == "1" {
 		// if id is 1, is Coordinator
-		go coordinator.Start()
+		go coordinator.Start(quitting)
 	} else {
 		// otherwise participant
-		go participant.Start(hostname, nodeId)
+		go participant.Start(hostname, nodeId, quitting)
 	}
 	// handle everything else there
 }

@@ -86,13 +86,12 @@ def run_experiment(reqs, replica_count):
     master_process.wait()
 
 def collect_data(replica_count):
-  with open('out/client.log', 'r') as f:
-    for m in re.finditer(r'Total time taken: (\d+)', f.read()):
-      client_time = int(m.group(1))
-      print('client time', client_time)
 
   monitor_time = 0
   with open('out/master.log', 'r') as f:
+    for m in re.finditer(r'Total time taken: (\d+)', f.read()):
+      client_time = int(m.group(1))
+      print('client time', client_time)
     for m in re.finditer(r'Monitor time taken: (\d+)', f.read()):
       t = int(m.group(1))
       monitor_time += t
@@ -130,17 +129,18 @@ if __name__ == "__main__":
   build()
 
   # testing baby steps
-  runs = 1
+  # runs = 1
   # runs = 2
-  replica_counts = {2}
+  # replica_counts = {2}
   # replica_counts = {3}
-  reqs = 2
+  # reqs = 1
+  # reqs = 2
   # reqs = 5
 
   # paper configuration
-  # runs = 5
-  # replica_counts = {2, 4, 6}
-  # reqs = 100
+  runs = 5
+  replica_counts = {2, 4, 6}
+  reqs = 100
   for c in replica_counts:
     print(f'------ {c} replicas')
     run_it_all(reqs, runs, c)

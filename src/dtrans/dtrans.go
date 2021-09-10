@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"time"
 )
 
 var currentId int32 = 0
 
-func Start() {
-	go node.Start()
+func Start(quitting chan bool) {
+	go node.Start(quitting)
 
 	reader := bufio.NewReader(os.Stdin)
 	// fmt.Println("Starting transaction interface")
@@ -23,13 +24,22 @@ func Start() {
   COMMIT
   ABORT`
 
+	started := false
+	var start time.Time
+
 	// fmt.Println(usage)
 	r, _ := regexp.Compile(`(BEGIN)|(SET) (.*)\.(.+) (.*)|(GET) (.*)\.(.*)|(COMMIT)|(ABORT)`)
 	for {
 		text, err := reader.ReadString('\n')
+		// measure time from the first input
+		if !started {
+			started = true
+			start = time.Now()
+		}
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error reading from stdin: %v\n", err)
-			os.Exit(1)
+			fmt.Printf("Total time taken: %d\n", time.Since(start).Nanoseconds())
+			break
 		}
 		if r.MatchString(text) {
 			res := r.FindStringSubmatch(text)

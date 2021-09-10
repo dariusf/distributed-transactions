@@ -23,9 +23,9 @@ type Coordinator struct {
 	monitor      *rvc.Monitor
 }
 
-func Start() error {
+func Start(quitting chan bool) error {
 	log.Println("Starting coordinator..")
-	self = New()
+	self = New(quitting)
 
 	// set up RPCs
 	e := self.setupRPC()
@@ -46,10 +46,16 @@ func Start() error {
 	return nil
 }
 
-func New() Coordinator {
+func New(quitting chan bool) Coordinator {
 	parts := make(map[string]participant.Participant, 0)
 	mParts := map[string]bool{}
-	c := Coordinator{Participants: parts, mParts: mParts, monitor: rvc.NewMonitor(map[string]map[string]bool{"P": mParts})}
+	monitor := rvc.NewMonitor(map[string]map[string]bool{"P": mParts})
+	go func() {
+		_ = <-quitting
+		monitor.PrintLog()
+		quitting <- true
+	}()
+	c := Coordinator{Participants: parts, mParts: mParts, monitor: monitor}
 	return c
 }
 
