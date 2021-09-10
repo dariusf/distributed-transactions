@@ -2,7 +2,7 @@ package coordinator
 
 import (
 	"distributed-transactions/src/node/participant"
-	"distributed-transactions/src/rv"
+	"distributed-transactions/src/rvc"
 	"fmt"
 	"log"
 	"net"
@@ -20,7 +20,7 @@ var graph *Graph
 type Coordinator struct {
 	Participants map[string]participant.Participant
 	mParts       map[string]bool
-	monitor      *rv.Monitor
+	monitor      *rvc.Monitor
 }
 
 func Start() error {
@@ -49,7 +49,7 @@ func Start() error {
 func New() Coordinator {
 	parts := make(map[string]participant.Participant, 0)
 	mParts := map[string]bool{}
-	c := Coordinator{Participants: parts, mParts: mParts, monitor: rv.NewMonitor(map[string]map[string]bool{"P": mParts})}
+	c := Coordinator{Participants: parts, mParts: mParts, monitor: rvc.NewMonitor(map[string]map[string]bool{"P": mParts})}
 	return c
 }
 

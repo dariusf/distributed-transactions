@@ -1,10 +1,11 @@
-package rv
+package rvc
 
 import (
 	"errors"
 	"fmt"
 	"reflect"
 	"sync"
+	"time"
 )
 
 type Global struct {
@@ -284,26 +285,45 @@ type Monitor struct {
 	previous Global
 	PC       map[string]int
 	//vars     map[string][]string
-	vars        map[string]map[string]bool
-	ltlMonitor1 *LTLMonitor1
-	Log         Log
-	lock        sync.Mutex
+	vars            map[string]map[string]bool
+	ltlMonitor1     *LTLMonitor1
+	Log             Log
+	ExecutionTimeNs int64
+	lock            sync.Mutex
 }
 
 //func NewMonitor(vars map[string][]string) *Monitor {
 func NewMonitor(vars map[string]map[string]bool) *Monitor {
 	return &Monitor{
 		// previous is the empty Global
-		PC:          map[string]int{},
+		PC:          map[string]int{}, // not the smae as a nil map
 		vars:        vars,
-		Log:         Log{},
 		ltlMonitor1: NewLTLMonitor1(vars),
+		// Everything else uses mzero
 	}
+}
+
+func (m *Monitor) Reset() {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	defer m.trackTime(time.Now())
+
+	m.previous = Global{}
+	m.PC = map[string]int{}
+	// vars ok
+	m.ltlMonitor1 = NewLTLMonitor1(m.vars)
+	m.Log = Log{}
+
+	// This is deliberately not reset, to track the total time the monitor has been used
+	// m.ExecutionTimeNs = 0
+
+	// lock ok
 }
 
 func (m *Monitor) Step(g Global, act Action, params ...string) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
+	defer m.trackTime(time.Now())
 
 	if err := m.precondition(&g, act, params...); err != nil {
 		return err
@@ -327,6 +347,7 @@ func (m *Monitor) Step(g Global, act Action, params ...string) error {
 func (m *Monitor) StepA(act Action, params ...string) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
+	defer m.trackTime(time.Now())
 
 	if err := m.precondition(nil, act, params...); err != nil {
 		return err
@@ -342,6 +363,7 @@ func (m *Monitor) StepA(act Action, params ...string) error {
 func (m *Monitor) StepS(g Global) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
+	defer m.trackTime(time.Now())
 
 	m.previous = g
 
@@ -361,4 +383,11 @@ func (m *Monitor) PrintLog() {
 	for _, e := range m.Log {
 		fmt.Printf("%s %v\n", e.action, e.params)
 	}
+	// fmt.Printf("Monitor time taken: %v\n", time.Duration(m.ExecutionTimeNs))
+	fmt.Printf("Monitor time taken: %d\n", m.ExecutionTimeNs)
+}
+
+func (m *Monitor) trackTime(start time.Time) {
+	elapsed := time.Since(start)
+	m.ExecutionTimeNs += elapsed.Nanoseconds()
 }
