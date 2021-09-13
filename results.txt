@@ -1,0 +1,189 @@
+------ 2 replicas
+---- run 0
+waiting for processes to start
+about to communicate
+ok
+client terminated
+terminated
+client time 260247322
+replica 0 time 109944
+replica 1 time 113490
+monitor time 223434
+---- run 1
+waiting for processes to start
+about to communicate
+ok
+client terminated
+terminated
+client time 252424322
+replica 0 time 122768
+replica 1 time 107184
+monitor time 229952
+---- run 2
+waiting for processes to start
+about to communicate
+ok
+client terminated
+terminated
+client time 265326643
+replica 0 time 109612
+replica 1 time 106720
+monitor time 216332
+---- run 3
+waiting for processes to start
+about to communicate
+ok
+client terminated
+terminated
+client time 254012026
+replica 0 time 110181
+replica 1 time 112135
+monitor time 222316
+---- run 4
+waiting for processes to start
+about to communicate
+ok
+client terminated
+terminated
+client time 252084413
+replica 0 time 145595
+replica 1 time 115429
+monitor time 261024
+------
+avg overhead for 2 replicas: 0.0008979540034338558
+------ 4 replicas
+---- run 0
+waiting for processes to start
+about to communicate
+ok
+client terminated
+terminated
+client time 312496316
+replica 0 time 114428
+replica 1 time 80311
+replica 2 time 63529
+replica 3 time 108413
+monitor time 366681
+---- run 1
+waiting for processes to start
+about to communicate
+ok
+client terminated
+terminated
+client time 319773191
+replica 0 time 134124
+replica 1 time 76334
+replica 2 time 74889
+replica 3 time 88752
+monitor time 374099
+---- run 2
+waiting for processes to start
+about to communicate
+ok
+client terminated
+terminated
+client time 319723405
+replica 0 time 78412
+replica 1 time 86495
+replica 2 time 96872
+replica 3 time 86200
+monitor time 347979
+---- run 3
+waiting for processes to start
+about to communicate
+ok
+client terminated
+terminated
+client time 323929537
+replica 0 time 83227
+replica 1 time 67753
+replica 2 time 74159
+replica 3 time 78914
+monitor time 304053
+---- run 4
+waiting for processes to start
+about to communicate
+ok
+client terminated
+terminated
+client time 317769738
+replica 0 time 100903
+replica 1 time 69254
+replica 2 time 82982
+replica 3 time 88050
+monitor time 341189
+------
+avg overhead for 4 replicas: 0.0010880400959134527
+------ 6 replicas
+---- run 0
+waiting for processes to start
+about to communicate
+ok
+client terminated
+terminated
+client time 349544519
+replica 0 time 61484
+replica 1 time 61971
+replica 2 time 49078
+replica 3 time 63462
+replica 4 time 58118
+replica 5 time 85393
+monitor time 379506
+---- run 1
+waiting for processes to start
+about to communicate
+ok
+client terminated
+terminated
+client time 380143017
+replica 0 time 50188
+replica 1 time 53349
+replica 2 time 60784
+replica 3 time 91205
+replica 4 time 49183
+replica 5 time 56017
+monitor time 360726
+---- run 2
+waiting for processes to start
+about to communicate
+ok
+client terminated
+terminated
+client time 349303339
+replica 0 time 83676
+replica 1 time 63335
+replica 2 time 54901
+replica 3 time 51953
+replica 4 time 64958
+replica 5 time 61315
+monitor time 380138
+---- run 3
+waiting for processes to start
+about to communicate
+ok
+client terminated
+terminated
+client time 345316565
+replica 0 time 70239
+replica 1 time 51336
+replica 2 time 58794
+replica 3 time 50208
+replica 4 time 48325
+replica 5 time 68125
+monitor time 347027
+---- run 4
+waiting for processes to start
+about to communicate
+ok
+client terminated
+terminated
+client time 362727316
+replica 0 time 63665
+replica 1 time 58038
+replica 2 time 52737
+replica 3 time 53497
+replica 4 time 67830
+replica 5 time 67271
+monitor time 363038
+------
+avg overhead for 6 replicas: 0.0010242861779012876
