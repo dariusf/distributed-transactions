@@ -6,6 +6,7 @@ import os
 import time
 import shutil
 import re
+import sys
 
 def mkdirp(path):
   pathlib.Path(path).mkdir(parents=True, exist_ok=True)
@@ -34,7 +35,7 @@ def start_replica(f, n):
       'NODE_ID': str(i),
     })
 
-def start_client(reqs, f, master, replica_count):
+def start_client(reqs, f, master, replica_count, repro):
 
   commands = []
   for i in range(reqs):
@@ -43,15 +44,23 @@ def start_client(reqs, f, master, replica_count):
       commands.append(f'SET {chr(65+j)}.{"a"*(i+1)} {i+1}')
     commands.append('COMMIT')
   
-  # s = ''.join(f'BEGIN\nSET A.{"a"*(i+1)} {i+1}\nCOMMIT\n' for i in range(reqs)).encode('utf-8')
-  s = ''.join(c + '\n' for c in commands).encode('utf-8')
+  # s = ''.join(c + '\n' for c in commands).encode('utf-8')
+  commands = [c.encode('utf-8') + b'\n' for c in commands]
+
+  if repro:
+    # remove the third message, which notifies the second replica of the write
+    commands = commands[:1] + commands[2:]
+
   print('about to communicate')
-  # stdout =
-  master.communicate(input=s)
+
+  for i, l in enumerate(commands):
+    master.stdin.write(l)
+    master.stdin.flush()
+  master.stdin.close()
+  time.sleep(2)
+
   print('ok')
-  # [0].decode('utf-8')
-  # print('got stdout')
-  # f.write(stdout)
+
 
 def clean(replica_count):
   shutil.rmtree('out', ignore_errors=True)
@@ -61,7 +70,7 @@ def build():
   subprocess.check_call(['go', 'build', 'main.go'],
     stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
-def run_experiment(reqs, replica_count):
+def run_experiment(reqs, replica_count, repro):
   replica_files = []
   replica_processes = []
   with open('out/master.log', 'w') as master_f, open('out/client.log', 'w') as client_f:
@@ -73,7 +82,7 @@ def run_experiment(reqs, replica_count):
 
     print('waiting for processes to start')
     time.sleep(5)
-    start_client(reqs, client_f, master_process, replica_count)
+    start_client(reqs, client_f, master_process, replica_count, repro)
     print('client terminated')
 
     for f in replica_files:
@@ -107,13 +116,13 @@ def collect_data(replica_count):
   print('monitor time', monitor_time)
   return monitor_time, client_time
 
-def run_it_all(reqs, runs, replica_count):
+def run_it_all(reqs, runs, replica_count, repro):
   monitor_time = 0
   client_time = 0
   for i in range(runs):
     print(f'---- run {i}')
     clean(replica_count)
-    run_experiment(reqs, replica_count)
+    run_experiment(reqs, replica_count, repro)
     m, c = collect_data(replica_count)
     monitor_time += m
     client_time += c
@@ -126,6 +135,7 @@ def run_it_all(reqs, runs, replica_count):
 
 
 if __name__ == "__main__":
+  repro = len(sys.argv) > 1
   build()
 
   # testing baby steps
@@ -141,6 +151,12 @@ if __name__ == "__main__":
   runs = 5
   replica_counts = {2, 4, 6}
   reqs = 100
+
+  if repro:
+    runs = 1
+    replica_counts = {2}
+    reqs = 1
+
   for c in replica_counts:
     print(f'------ {c} replicas')
-    run_it_all(reqs, runs, c)
+    run_it_all(reqs, runs, c, repro)
